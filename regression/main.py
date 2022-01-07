@@ -39,7 +39,7 @@ for i in range(len(x)): #12 * 471
             x[i][j] = (x[i][j] - mean_x[j]) / std_x[j]
 
 
-# Spit Training data into 'train_set' and 'validation_set'
+# Split Training data into 'train_set' and 'validation_set'
 x_train_set = x[: math.floor(len(x) * 0.8), :]
 y_train_set = y[: math.floor(len(y) * 0.8), :]
 x_validation = x[math.floor(len(x) * 0.8): , :]
@@ -91,13 +91,5 @@ with open("submit.csv", mode="w", newline="") as submit_file:
         row = ["id_" + str(i), ans_y[i][0]]
         csv_writer.writerow(row)
         print(row)
-
-
-
-
-
-
-
-
 
 
