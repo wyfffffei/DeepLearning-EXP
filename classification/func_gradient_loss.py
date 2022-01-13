@@ -1,3 +1,6 @@
+import numpy as np
+from func_update_parameters import _f
+
 def _cross_entropy_loss(y_pred, Y_label):
     # This function computes the cross entropy.
     #

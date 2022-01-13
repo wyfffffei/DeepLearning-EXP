@@ -1,3 +1,5 @@
+import numpy as np
+
 def _shuffle(X, Y):
     # This function shuffles two equal-length list/array, X and Y, together.
     randomize = np.arange(len(X))

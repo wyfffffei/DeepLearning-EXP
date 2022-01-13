@@ -49,7 +49,7 @@ y_validation = y[math.floor(len(y) * 0.8): , :]
 dim = 18 * 9 + 1
 w = np.zeros([dim, 1])
 x = np.concatenate((np.ones([12 * 471, 1]), x), axis = 1).astype(float)
-learning_rate = 100
+learning_rate = 0.1
 iter_time = 1000
 adagrad = np.zeros([dim, 1])
 eps = 0.0000000001
@@ -59,7 +59,7 @@ for t in range(iter_time):
         print(str(t) + ":" + str(loss))
     gradient = 2 * np.dot(x.transpose(), np.dot(x, w) - y) #dim*1
     adagrad += gradient ** 2
-    w = w - learning_rate * gradient / np.sqrt(adagrad + eps)
+    w = w - learning_rate * gradient / np.sqrt(adagrad / (t+1) + eps)
 np.save('weight.npy', w)
 
 # Testing
@@ -91,5 +91,4 @@ with open("submit.csv", mode="w", newline="") as submit_file:
         row = ["id_" + str(i), ans_y[i][0]]
         csv_writer.writerow(row)
         print(row)
-
 
