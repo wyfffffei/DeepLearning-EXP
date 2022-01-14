@@ -1,5 +1,7 @@
+import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
+
 
 class Classifier(nn.Module):
     def __init__(self):
@@ -55,8 +57,10 @@ class ImgDataset(Dataset):
         if y is not None:
             self.y = torch.LongTensor(y)
         self.transform = transform
+
     def __len__(self):
         return len(self.x)
+
     def __getitem__(self, index):
         X = self.x[index]
         if self.transform is not None:
@@ -66,3 +70,4 @@ class ImgDataset(Dataset):
             return X, Y
         else:
             return X
+
