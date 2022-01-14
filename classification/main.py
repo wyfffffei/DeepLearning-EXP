@@ -1,4 +1,4 @@
-# Logestic Regression
+# Logistic Regression
 import numpy as np
 
 np.random.seed(0)
@@ -66,7 +66,7 @@ data_dim = X_train.shape[1] # 510
 print('Size of training set: {}'.format(train_size))
 print('Size of development set: {}'.format(dev_size))
 print('Size of testing set: {}'.format(test_size))
-print('Dimension of data: {}'.format(data_dim))
+print('Dimension of data: {}'.format(data_dim), end="\n\n")
 
 
 # training
@@ -98,8 +98,8 @@ for epoch in range(max_iter):
         
     # Mini-batch training
     for idx in range(int(np.floor(train_size / batch_size))):
-        X = X_train[idx*batch_size:(idx+1)*batch_size]
-        Y = Y_train[idx*batch_size:(idx+1)*batch_size]
+        X = X_train[idx*batch_size : (idx+1)*batch_size]
+        Y = Y_train[idx*batch_size : (idx+1)*batch_size]
 
         # Compute the gradient
         w_grad, b_grad = _gradient(X, Y, w, b)
@@ -125,7 +125,7 @@ for epoch in range(max_iter):
 print('Training loss: {}'.format(train_loss[-1]))
 print('Development loss: {}'.format(dev_loss[-1]))
 print('Training accuracy: {}'.format(train_acc[-1]))
-print('Development accuracy: {}'.format(dev_acc[-1]))
+print('Development accuracy: {}'.format(dev_acc[-1]), end="\n\n")
 
 
 # Plotting Loss and accuracy curve
