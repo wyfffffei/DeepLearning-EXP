@@ -35,19 +35,22 @@ print("Size of Testing data = {}".format(len(test_x)), end="\n\n")
 
 
 # Training
-# training 時做 data augmentation
+
+# data augmentation
+# training
 train_transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.RandomHorizontalFlip(),  # 隨機將圖片水平翻轉
     transforms.RandomRotation(15),  # 隨機旋轉圖片
     transforms.ToTensor(),  # 將圖片轉成 Tensor，並把數值 normalize 到 [0,1] (data normalization)
 ])
-# testing 時不需做 data augmentation
+# testing
 test_transform = transforms.Compose([
     transforms.ToPILImage(),                                    
     transforms.ToTensor(),
 ])
 
+# Load the picture matrix
 batch_size = 128
 train_set = ImgDataset(train_x, train_y, train_transform)
 val_set = ImgDataset(val_x, val_y, test_transform)
@@ -56,8 +59,8 @@ val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 
 model = Classifier().cuda()
-loss = nn.CrossEntropyLoss()  # 因為是 classification task，所以 loss 使用 CrossEntropyLoss
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)  # optimizer 使用 Adam
+loss = nn.CrossEntropyLoss()  # 因為是 classification task，所以 loss 使用 CrossEntropyLoss (Loss Function)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)  # optimizer 使用 Adam (Optimizer)
 num_epoch = 30
 
 for epoch in range(num_epoch):
