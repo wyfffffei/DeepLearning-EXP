@@ -21,13 +21,13 @@ import torch
 #     os.system(f"copy .\\food-11\\testing\\{file}.jpg .\\output\\{target}\\{file}.jpg")
 
 
-workspace_dir = './food-11'
+workspace_dir = './output'
 print("Reading data ..")
-train_x, train_y = _readfile(os.path.join(workspace_dir, "training"), True)
+train_x = _readfile(os.path.join(workspace_dir, "1"), False)
 print("Size of training data = {}".format(len(train_x)))
 
-batch_size = 1
-train_set = model.ImgDataset(train_x, train_y, transform=transforms.Compose([transforms.ToPILImage(), transforms.ToTensor()]))
+batch_size = 32
+train_set = model.ImgDataset(train_x)
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
 for data in train_loader:
