@@ -96,6 +96,110 @@ print(x_train.shape)
 
 ## Model Create
 
+```python
+class FullConnection(nn.Module):
+    def __init__(self):
+        super(FullConnection, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(784, 200),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(200, 200),
+            nn.LeakyReLU(inplace=True),
+            nn.Linear(200, 10),
+            nn.LeakyReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+    
+# func = FullConnection()
+# input = torch.randn(784, requires_grad=True)
+# out = func(input)
+# print(out)
+
+device = torch.device("cpu")
+net = FullConnection().to(device)
+learning_rate = 1e-2
+epochs = 100
+optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+loss_func = nn.CrossEntropyLoss().to(device)
+train_data, test_data = dataloader()
+logger = SummaryWriter("./logs_train")
+```
+
+
+
+
+
+## Train the Model (step)
+
+```python
+for epoch in range(epochs):
+    # 一轮训练
+    net.train()
+    for batch_id, (tra_data, tra_target) in enumerate(train_data):
+        tra_data, tra_target = tra_data.to(device), tra_target.to(device)
+        pre_train = net(tra_data)
+        loss = loss_func(pre_train, tra_target)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch_id % 10 == 0:
+            print("Train Epoch : {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
+                epoch, batch_id*len(tra_data), len(train_data), 100.*batch_id/len(train_data), loss.item()
+            ))
+            logger.add_scalar("train_loss", loss.item(), batch_id)
+```
+
+
+
+
+
+## Test the Model (step)
+
+```python
+net.eval()
+test_loss = 0
+accurancy = 0
+with torch.no_grad():
+    for tes_data, tes_target in test_data:
+        tes_data, tes_target = tes_data.to(device), tes_target.to(device)
+        pre_test = net(tes_data)
+        test_loss += loss_func(pre_test, tes_target).item()
+        accurancy += (pre_test.argmax(1) == tes_target).sum()
+test_loss /= len(test_data
+print("\nTest set : Average loss: {:.4f}, Accurancy: {}/{}({:.3f}%)".format(
+    test_loss, accurancy, len(test_data), 100.*accurancy/len(test_data)
+))
+logger.add_scalar("test_loss", test_loss, epoch)
+logger.add_scalar("test_accuracy", accurancy, epoch)
+```
+
+
+
+
+
+## Other Questions
+
+### 过拟合(overfitting)
+
+*Q:训练的网络模型对验证数据集性能很差，但对训练数据集性能很好*
+
+*A:模型太复杂或者训练数据太少*
+
+ ![overfitting.png](./img/overfitting.png)
+
+#### 缩减模型大小
+
+#### 加入权重正则化(Weights Regularization)
+
+ ![weight_regularization.png](./img/weight_regularization.png)
+
+ ![weight_regularization_2.png](./img/weight_regularization_2.png)
+
+#### 加入Dropout
 
 
 
