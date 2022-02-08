@@ -53,7 +53,7 @@ test_data = data.loc[test_indexs]
 
 ### 归一化（Normalization）
 
-![feature-scaling.png](./img/feature-scaling.png)
+ ![feature-scaling.png](./img/feature-scaling.png)
 
 ```python
 # Standard Score (z-score)
@@ -171,7 +171,7 @@ logger.add_scalar("test_accuracy", accurancy, epoch)
 
 缺点：在分母中累计平方梯度，会导致 early stopping 现象，即学习率过早变小，导致模型还未收敛就停滞不前
 
-![adagrad.png](./img/adagrad.png)
+ ![adagrad.png](./img/adagrad.png)
 
 ```python
 grad_squared = 0
@@ -185,7 +185,7 @@ while True:
 
 采用指数加权平均的思想，只将最近的梯度累加计算平方，这避免了 early stopping 现象
 
-![rmsprop.png](./img/rmsprop.png)
+ ![rmsprop.png](./img/rmsprop.png)
 
 ```python
 grad_squared = 0
@@ -201,15 +201,15 @@ while True:
 
 缺点：不能保证突破 local minima
 
-![momentum.png](./img/momentum.png)
+ ![momentum.png](./img/momentum.png)
 
-![momentum_2.png](./img/momentum_2.png)
+ ![momentum_2.png](./img/momentum_2.png)
 
 #### Adam ✔
 
 RMSProp + Momentum
 
-![adam.png](./img/adam.png)
+ ![adam.png](./img/adam.png)
 
 ### 梯度消失（Vanishing Gradient Problem）
 
@@ -219,13 +219,13 @@ RMSProp + Momentum
 
 #### ReLU
 
-![ReLU.png](./img/ReLU.png)
+ ![ReLU.png](./img/ReLU.png)
 
-![ReLU_2.png](./img/ReLU_2.png)
+ ![ReLU_2.png](./img/ReLU_2.png)
 
 #### Maxout
 
-![Maxout.png](./img/Maxout.png)
+ ![Maxout.png](./img/Maxout.png)
 
 ## Better Testing
 
@@ -245,21 +245,21 @@ RMSProp + Momentum
 
 避免过拟合，但也可能造成模型还未收敛完全
 
-![toodeep.png](./img/toodeep.png)
+ ![toodeep.png](./img/toodeep.png)
 
 #### 权重正则化（Weights Regularization）
 
 在模型的拟合过程中，权重越小，函数往往越平滑，因此在 loss function 的基础上在加一个和所有权重相关的值，目的是使权重也尽可能的小，不互相依赖
 
 ![weight_regularization.png](./img/weight_regularization.png)
+$$
+L1-Regularization：Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j|}
+\quad
+L2-Regularization：Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j²|}
+$$
+*$w$* ：模型的权重
 
-- L1 Regularization：$Loss_T = Loss_M + λΣ_j|w_j|$
-
-- L2 Regularization：$Loss_T = Loss_M + λΣ_j|w_j²|$
-
-*w* ：模型的权重
-
-*j* ：代表模型的权重数量（0 -> M）
+*$j$* ：代表模型的权重数量（0 -> M）
 
 *$Loss_M$*：代表损失函数为均方误差
 
@@ -269,14 +269,14 @@ RMSProp + Momentum
 
  ![weight_regularization_2.png](./img/weight_regularization_2.png)
 
-![weight_regularization_3.png](./img/weight_regularization_3.png)
+ ![weight_regularization_3.png](./img/weight_regularization_3.png)
 
-![weight_regularization_4.png](./img/weight_regularization_4.png)
+ ![weight_regularization_4.png](./img/weight_regularization_4.png)
 
 #### Dropout
 
 在每次训练时，随机失活部分参数（仅在训练中使用），避免神经元过分依赖局部特征
 
-![dropout.png](./img/dropout.png)
+ ![dropout.png](./img/dropout.png)
 
-![dropout_2.png](./img/dropout_2.png)
+ ![dropout_2.png](./img/dropout_2.png)
