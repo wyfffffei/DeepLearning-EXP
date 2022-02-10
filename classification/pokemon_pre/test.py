@@ -23,3 +23,6 @@ for x_train, y_ans in zip(x_train_data, y_train):
     i+=1
     if i == 10:
         break
+
+print(y_train.size())
+print(i/x_train_data.size()[1])

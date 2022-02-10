@@ -57,8 +57,8 @@ def datainit():
     data_num = combats_df.shape[0]
     np.random.seed(66)
     indexes = np.random.permutation(data_num)
-    train_indexes = indexes[:int(data_num * 0.8)]
-    val_indexes = indexes[int(data_num * 0.8):]
+    train_indexes = indexes[:int(data_num * 0.1)]
+    val_indexes = indexes[int(data_num * 0.9):]
     # train_indexes = indexes[:int(data_num * 0.6)]
     # val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
     test_indexes = indexes[int(data_num * 0.8):]  # 暂不使用
@@ -99,9 +99,9 @@ def datainit():
 
 
 def train(data):
-    device = torch.device("cpu")
+    device = torch.device("cuda")
     net = FullConnection().to(device)
-    epochs = 100
+    epochs = 10
     learning_rate = 1e-3
 
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # 优化器 -> Adam
@@ -126,9 +126,9 @@ def train(data):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            if batch_id % 10 == 0:
+            if (batch_id + 1) % 500 == 0:
                 print("Train Epoch : {} [{}/{} ({:.0f}%)]\tLoss : {:.6f}".format(
-                    epoch, batch_id * len(x_train), len(y_train_ans), 100.*batch_id / len(y_train_ans), loss.item()
+                    epoch + 1, batch_id + 1, len(y_train), 100.*(batch_id + 1) / len(y_train), loss.item()
                 ))
                 logger.add_scalar("train_loss", loss.item(), batch_id)
 
@@ -140,9 +140,9 @@ def train(data):
                 x_val, y_val_ans = x_val.to(device), y_val_ans.to(device)
                 pre_val = net(x_val)
                 val_loss += loss_fn(pre_val, y_val_ans)
-                accurancy += (pre_val.argmax(1) == y_val_ans).sum()
+                accurancy += 1 if pre_val == y_val_ans else 0
         val_loss /= len(y_val)
-        print("\nValidation set : Average Loss: {:.4f}, Accurancy: {}/{}({:.3f}%)".format(
+        print("Validation set : Average Loss: {:.4f}, Accurancy: {}/{}({:.3f}%)\n".format(
             val_loss, accurancy, len(y_val), 100.*accurancy / len(y_val)
         ))
         logger.add_scalar("Val_Loss", val_loss, epoch)
@@ -157,9 +157,7 @@ def main():
     data = datainit()
     print(80 * '-')
     print("训练开始:")
-    print()
     train(data)
-    print()
     print("训练结束")
     print(80 * '-')
 
