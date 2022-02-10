@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-import FullConnection
+from FullConnection import FullConnection
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
 
 
 def datainit():
@@ -52,10 +55,13 @@ def datainit():
 
     # 训练、验证、测试数据集划分
     data_num = combats_df.shape[0]
+    np.random.seed(66)
     indexes = np.random.permutation(data_num)
-    train_indexes = indexes[:int(data_num * 0.6)]
-    val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
-    test_indexes = indexes[int(data_num * 0.8):]
+    train_indexes = indexes[:int(data_num * 0.8)]
+    val_indexes = indexes[int(data_num * 0.8):]
+    # train_indexes = indexes[:int(data_num * 0.6)]
+    # val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
+    test_indexes = indexes[int(data_num * 0.8):]  # 暂不使用
 
     train_data = combats_df.loc[train_indexes]
     val_data = combats_df.loc[val_indexes]
@@ -92,8 +98,70 @@ def datainit():
     return ((x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test))
 
 
+def train(data):
+    device = torch.device("cpu")
+    net = FullConnection().to(device)
+    epochs = 100
+    learning_rate = 1e-3
+
+    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # 优化器 -> Adam
+    loss_fn = F.binary_cross_entropy  # 损失函数 -> Binary Cross Entropy
+    from torch.utils.tensorboard import SummaryWriter
+    logger = SummaryWriter("./logs_train")  # 日志记录 -> Tensorboard
+
+    # 数据读取
+    (x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test) = data
+    x_train_data = torch.from_numpy(x_train_data).float()
+    x_val_data = torch.from_numpy(x_val_data).float()
+    y_train = torch.from_numpy(y_train).float()
+    y_val = torch.from_numpy(y_val).float()
+    
+    # 训练开始
+    for epoch in range(epochs):
+        net.train()
+        for batch_id, (x_train, y_train_ans) in enumerate(zip(x_train_data, y_train)):
+            x_train, y_train_ans = x_train.to(device), y_train_ans.to(device)
+            pre_train = net(x_train)
+            loss = loss_fn(pre_train, y_train_ans)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if batch_id % 10 == 0:
+                print("Train Epoch : {} [{}/{} ({:.0f}%)]\tLoss : {:.6f}".format(
+                    epoch, batch_id * len(x_train), len(y_train_ans), 100.*batch_id / len(y_train_ans), loss.item()
+                ))
+                logger.add_scalar("train_loss", loss.item(), batch_id)
+
+        net.eval()
+        val_loss = 0
+        accurancy = 0
+        with torch.no_grad():
+            for x_val, y_val_ans in zip(x_val_data, y_val):
+                x_val, y_val_ans = x_val.to(device), y_val_ans.to(device)
+                pre_val = net(x_val)
+                val_loss += loss_fn(pre_val, y_val_ans)
+                accurancy += (pre_val.argmax(1) == y_val_ans).sum()
+        val_loss /= len(y_val)
+        print("\nValidation set : Average Loss: {:.4f}, Accurancy: {}/{}({:.3f}%)".format(
+            val_loss, accurancy, len(y_val), 100.*accurancy / len(y_val)
+        ))
+        logger.add_scalar("Val_Loss", val_loss, epoch)
+        logger.add_scalar("Val_Accurancy", accurancy, epoch)
+
+    logger.close()
+    torch.save(net, "best.pt")
+
+
+
 def main():
-    (x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test) = datainit()
+    data = datainit()
+    print(80 * '-')
+    print("训练开始:")
+    print()
+    train(data)
+    print()
+    print("训练结束")
+    print(80 * '-')
 
 
 if __name__ == "__main__":
