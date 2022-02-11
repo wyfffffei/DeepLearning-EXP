@@ -9,14 +9,16 @@ net = FullConnection()
 # out = net(input)
 # print(out)
 
-(x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test) = datainit()
+x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = datainit()
 x_train_data = torch.from_numpy(x_train_data).float()
 y_train = torch.from_numpy(y_train).float()
 
 
 i=0
 for x_train, y_ans in zip(x_train_data, y_train):
+    print(y_ans)
     pre_train = net(x_train)
+    print(pre_train)
     print(F.binary_cross_entropy(pre_train, y_ans))
 
     print()
@@ -24,5 +26,3 @@ for x_train, y_ans in zip(x_train_data, y_train):
     if i == 10:
         break
 
-print(y_train.size())
-print(i/x_train_data.size()[1])

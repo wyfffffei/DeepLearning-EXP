@@ -1,8 +1,11 @@
+import time
 import numpy as np
 import pandas as pd
 from FullConnection import FullConnection
 import torch
 import torch.nn.functional as F
+from train_eval_utils import *
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
@@ -57,8 +60,8 @@ def datainit():
     data_num = combats_df.shape[0]
     np.random.seed(66)
     indexes = np.random.permutation(data_num)
-    train_indexes = indexes[:int(data_num * 0.1)]
-    val_indexes = indexes[int(data_num * 0.9):]
+    train_indexes = indexes[:int(data_num * 0.8)]
+    val_indexes = indexes[int(data_num * 0.8):]
     # train_indexes = indexes[:int(data_num * 0.6)]
     # val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
     test_indexes = indexes[int(data_num * 0.8):]  # 暂不使用
@@ -89,28 +92,29 @@ def datainit():
     print(80 * '-')
     print("训练数据shape:")
     one_hot_pokemon_df = np.array(pokemon_df.loc[:, "HP":])
-    print(one_hot_pokemon_df.shape)  # -> (800, 27) -> 每次输入两个宝可梦 -> reshape(-1, 27 * 2)
+    print("原数据: ", end=str(one_hot_pokemon_df.shape)+'\n')  # -> (800, 27) -> 每次输入两个宝可梦 -> reshape(-1, 27 * 2)
     x_train_data = one_hot_pokemon_df[x_train_index - 1].reshape((-1, 27 * 2))
     x_val_data = one_hot_pokemon_df[x_val_index - 1].reshape((-1, 27 * 2))
     x_test_data = one_hot_pokemon_df[x_test_index - 1].reshape((-1, 27 * 2))
-    print(x_train_data.shape)  # -> (30000, 54)
+    print("新数据: ", end=str(x_train_data.shape)+'\n')  # -> (30000, 54)
     print()
-    return ((x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test))
+    return x_train_data, x_val_data, x_test_data, y_train, y_val, y_test
 
 
 def train(data):
-    device = torch.device("cuda")
+    device = torch.device("cpu")
     net = FullConnection().to(device)
-    epochs = 10
-    learning_rate = 1e-3
+    epochs = 20
+    learning_rate = 1e-2
 
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # 优化器 -> Adam
     loss_fn = F.binary_cross_entropy  # 损失函数 -> Binary Cross Entropy
+    # loss_fn = nn.CrossEntropyLoss().to(device)
     from torch.utils.tensorboard import SummaryWriter
     logger = SummaryWriter("./logs_train")  # 日志记录 -> Tensorboard
 
     # 数据读取
-    (x_train_data, x_val_data, x_test_data), (y_train, y_val, y_test) = data
+    x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = data
     x_train_data = torch.from_numpy(x_train_data).float()
     x_val_data = torch.from_numpy(x_val_data).float()
     y_train = torch.from_numpy(y_train).float()
@@ -118,39 +122,21 @@ def train(data):
     
     # 训练开始
     for epoch in range(epochs):
-        net.train()
-        for batch_id, (x_train, y_train_ans) in enumerate(zip(x_train_data, y_train)):
-            x_train, y_train_ans = x_train.to(device), y_train_ans.to(device)
-            pre_train = net(x_train)
-            loss = loss_fn(pre_train, y_train_ans)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            if (batch_id + 1) % 500 == 0:
-                print("Train Epoch : {} [{}/{} ({:.0f}%)]\tLoss : {:.6f}".format(
-                    epoch + 1, batch_id + 1, len(y_train), 100.*(batch_id + 1) / len(y_train), loss.item()
-                ))
-                logger.add_scalar("train_loss", loss.item(), batch_id)
+        mean_loss = train_one_epoch(net, x_train_data, y_train, device, optimizer, loss_fn, epoch)
+        acc = evaluate_acc(net, x_val_data, y_val, device, loss_fn)
 
-        net.eval()
-        val_loss = 0
-        accurancy = 0
-        with torch.no_grad():
-            for x_val, y_val_ans in zip(x_val_data, y_val):
-                x_val, y_val_ans = x_val.to(device), y_val_ans.to(device)
-                pre_val = net(x_val)
-                val_loss += loss_fn(pre_val, y_val_ans)
-                accurancy += 1 if pre_val == y_val_ans else 0
-        val_loss /= len(y_val)
-        print("Validation set : Average Loss: {:.4f}, Accurancy: {}/{}({:.3f}%)\n".format(
-            val_loss, accurancy, len(y_val), 100.*accurancy / len(y_val)
-        ))
-        logger.add_scalar("Val_Loss", val_loss, epoch)
-        logger.add_scalar("Val_Accurancy", accurancy, epoch)
+        logger.add_scalar("Val_Loss", mean_loss, epoch)
+        logger.add_scalar("Val_Accurancy", acc, epoch)
 
     logger.close()
-    torch.save(net, "best.pt")
+    torch.save(net, "best_{}.pt".format(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())))
 
+
+def predict(model, input):
+    model.eval()
+    test_loss = 0
+    test_acc = 0
+    return test_acc
 
 
 def main():
