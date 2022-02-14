@@ -13,8 +13,9 @@ from FullConnection import FullConnection
 # print(out)
 
 x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = datainit()
-x_val_data = torch.from_numpy(x_val_data).float()
-y_val = torch.from_numpy(y_val).float()
+x_test_data = torch.from_numpy(x_test_data).float().cuda()
+y_test = torch.from_numpy(y_test).float().cuda()
+
 
 # i=0
 # for x_train, y_ans in zip(x_train_data, y_train):
@@ -38,6 +39,6 @@ y_val = torch.from_numpy(y_val).float()
 # evaluate(x)
 # print(x)
 
-model_path = "./best_2022_02_14_16_42_56.pt"
-print("TEST ACC: {:.4f}%".format(100. * test(model_path, x_val_data, y_val)))
+model_path = "weights_results/best_2022_02_15_02_13_23.pt"
+print("TEST ACC: {:.4f}%".format(100. * test(model_path, x_test_data, y_test, 0.4)))
 

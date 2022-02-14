@@ -53,7 +53,7 @@ def datainit():
 
     # 训练、验证数据集划分（8 : 2）
     data_num = combats_df.shape[0]
-    np.random.seed(66)
+    np.random.seed(11)
     indexes = np.random.permutation(data_num)
     # train_indexes = indexes[:int(data_num * 0.8)]
     # val_indexes = indexes[int(data_num * 0.8):]
@@ -98,21 +98,20 @@ def datainit():
     return x_train_data, x_val_data, x_test_data, y_train, y_val, y_test
 
 
-def train(data):
-    device = torch.device("cpu")
+def train(x_train_data, x_val_data, y_train, y_val, device, threshold):
     net = FullConnection().to(device)
-    epochs = 3
-    learning_rate = 1e-2
+    epochs = 50
+    learning_rate = 1e-3
+    eps = 1e-3
+    weight_decay = 1e-3
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # 优化器 -> Adam
+    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate, eps=eps, weight_decay=weight_decay)  # 优化器 -> Adam
     loss_fn = F.binary_cross_entropy  # 损失函数 -> Binary Cross Entropy
     # loss_fn = nn.CrossEntropyLoss().to(device)
     from torch.utils.tensorboard import SummaryWriter
     logger = SummaryWriter("./logs_train")  # 日志记录 -> Tensorboard
 
     # 数据读取
-    # x_train_data, x_val_data, y_train, y_val = data
-    x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = data
     x_train_data = torch.from_numpy(x_train_data).float()
     x_val_data = torch.from_numpy(x_val_data).float()
     y_train = torch.from_numpy(y_train).float()
@@ -121,7 +120,7 @@ def train(data):
     # 训练开始
     for epoch in range(epochs):
         train_one_epoch(net, x_train_data, y_train, device, optimizer, loss_fn, logger, epoch)
-        evaluate_acc(net, x_val_data, y_val, device, loss_fn, logger, epoch)
+        evaluate_acc(net, x_val_data, y_val, device, loss_fn, logger, epoch, threshold)
 
     logger.close()
     model_path = "best_{}.pt".format(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime()))
@@ -129,21 +128,31 @@ def train(data):
     return model_path
 
 
-def predict(model):
-    model.eval()
-    pass
-
-
 def main():
-    data = datainit()
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    # 概率与实际值差的阈值(0~1)，阈值越小，训练越严
+    threshold = 0.4
+    print(f'正在使用 \'{device}\' 设备..')
+    start = time.time()
+    x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = datainit()
+
     print(80 * '-')
     print("训练开始:")
-    model_path = train(data)
+    model_path = train(x_train_data, x_val_data, y_train, y_val, device, threshold)
+    end_train = time.time()
+    print("训练耗时: {:.3f}s".format(end_train - start))
     print("训练结束")
     print(80 * '-')
     print()
-    acc = 100. * test('./' + model_path, torch.from_numpy(data[2]).float(), torch.from_numpy(data[5]).float())
-    print("TEST ACC: {:.6f}%".format(acc))
+
+    x_test_data = torch.from_numpy(x_test_data).float().to(device)
+    y_test = torch.from_numpy(y_test).float().to(device)
+    acc = 100. * test('./' + model_path, x_test_data, y_test, threshold)
+    end = time.time()
+    print("测试准确率: {:.6f}%".format(acc))
+    print("测试耗时: {:.3f}s".format(end - end_train))
+    print("总耗时: {:.3f}s".format(end - start))
+    print(80 * '-')
 
 
 if __name__ == "__main__":
