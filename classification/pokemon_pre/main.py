@@ -1,31 +1,26 @@
 import time
 import numpy as np
 import pandas as pd
-from FullConnection import FullConnection
 import torch
 import torch.nn.functional as F
+
+from FullConnection import FullConnection
 from train_eval_utils import *
-import torch.nn as nn
-from torch.utils.data import DataLoader
 
 
 def datainit():
     pokemon_df = pd.read_csv("./pokemon.csv").set_index('#')
     combats_df = pd.read_csv("./combats.csv")
 
-    # 检查数据缺失情况
+    # 数据缺失情况修正
     # print(pokemon_df.info())
     # print(pokemon_df["Type 2"].value_counts(dropna=False))
-
-    # 填充缺失数据
     pokemon_df["Type 2"].fillna("empty", inplace=True)
 
-    # 检查数据类型
+    # 检查数据类型修正
     # print(pokemon_df.dtypes)
     # print('-' * 30)
     # print(combats_df.dtypes)
-
-    # 调整数据类型
     pokemon_df["Type 1"] = pokemon_df["Type 1"].astype("category")
     pokemon_df["Type 2"] = pokemon_df["Type 2"].astype("category")
     pokemon_df["Legendary"] = pokemon_df["Legendary"].astype("int")
@@ -50,21 +45,22 @@ def datainit():
     print("宝可梦属性:")
     print(pokemon_df)
 
-    # 对战结果处理
+    # 训练数据处理（对战结果）
     combats_df["Winner"] = combats_df.apply(lambda x: 0 if x.Winner == x.First_pokemon else 1, axis="columns")
     print(80 * '-')
     print("训练数据:")
     print(combats_df)
 
-    # 训练、验证、测试数据集划分
+    # 训练、验证数据集划分（8 : 2）
     data_num = combats_df.shape[0]
     np.random.seed(66)
     indexes = np.random.permutation(data_num)
-    train_indexes = indexes[:int(data_num * 0.8)]
-    val_indexes = indexes[int(data_num * 0.8):]
-    # train_indexes = indexes[:int(data_num * 0.6)]
-    # val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
-    test_indexes = indexes[int(data_num * 0.8):]  # 暂不使用
+    # train_indexes = indexes[:int(data_num * 0.8)]
+    # val_indexes = indexes[int(data_num * 0.8):]
+    # 训练、验证数据集划分（6 : 2 : 2）
+    train_indexes = indexes[:int(data_num * 0.6)]
+    val_indexes = indexes[int(data_num * 0.6) : int(data_num * 0.8)]
+    test_indexes = indexes[int(data_num * 0.8):]
 
     train_data = combats_df.loc[train_indexes]
     val_data = combats_df.loc[val_indexes]
@@ -88,7 +84,7 @@ def datainit():
     y_val = np.array(val_data["Winner"])
     y_test = np.array(test_data["Winner"])
 
-    # 通过 one-hot 编码索引宝可梦属性
+    # 使用 one-hot 编码索引宝可梦，数据格式 reshape
     print(80 * '-')
     print("训练数据shape:")
     one_hot_pokemon_df = np.array(pokemon_df.loc[:, "HP":])
@@ -96,15 +92,16 @@ def datainit():
     x_train_data = one_hot_pokemon_df[x_train_index - 1].reshape((-1, 27 * 2))
     x_val_data = one_hot_pokemon_df[x_val_index - 1].reshape((-1, 27 * 2))
     x_test_data = one_hot_pokemon_df[x_test_index - 1].reshape((-1, 27 * 2))
-    print("新数据: ", end=str(x_train_data.shape)+'\n')  # -> (30000, 54)
+    print("新数据: ", end=str(x_train_data.shape)+'\n')  # -> (-1, 54)
     print()
+    # return x_train_data, x_val_data, y_train, y_val
     return x_train_data, x_val_data, x_test_data, y_train, y_val, y_test
 
 
 def train(data):
     device = torch.device("cpu")
     net = FullConnection().to(device)
-    epochs = 20
+    epochs = 3
     learning_rate = 1e-2
 
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)  # 优化器 -> Adam
@@ -114,6 +111,7 @@ def train(data):
     logger = SummaryWriter("./logs_train")  # 日志记录 -> Tensorboard
 
     # 数据读取
+    # x_train_data, x_val_data, y_train, y_val = data
     x_train_data, x_val_data, x_test_data, y_train, y_val, y_test = data
     x_train_data = torch.from_numpy(x_train_data).float()
     x_val_data = torch.from_numpy(x_val_data).float()
@@ -122,30 +120,30 @@ def train(data):
     
     # 训练开始
     for epoch in range(epochs):
-        mean_loss = train_one_epoch(net, x_train_data, y_train, device, optimizer, loss_fn, epoch)
-        acc = evaluate_acc(net, x_val_data, y_val, device, loss_fn)
-
-        logger.add_scalar("Val_Loss", mean_loss, epoch)
-        logger.add_scalar("Val_Accurancy", acc, epoch)
+        train_one_epoch(net, x_train_data, y_train, device, optimizer, loss_fn, logger, epoch)
+        evaluate_acc(net, x_val_data, y_val, device, loss_fn, logger, epoch)
 
     logger.close()
-    torch.save(net, "best_{}.pt".format(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())))
+    model_path = "best_{}.pt".format(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime()))
+    torch.save(net, model_path)
+    return model_path
 
 
-def predict(model, input):
+def predict(model):
     model.eval()
-    test_loss = 0
-    test_acc = 0
-    return test_acc
+    pass
 
 
 def main():
     data = datainit()
     print(80 * '-')
     print("训练开始:")
-    train(data)
+    model_path = train(data)
     print("训练结束")
     print(80 * '-')
+    print()
+    acc = 100. * test('./' + model_path, torch.from_numpy(data[2]).float(), torch.from_numpy(data[5]).float())
+    print("TEST ACC: {:.6f}%".format(acc))
 
 
 if __name__ == "__main__":
