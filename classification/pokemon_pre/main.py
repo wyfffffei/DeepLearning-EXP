@@ -112,10 +112,10 @@ def train(x_train_data, x_val_data, y_train, y_val, device, threshold):
     logger = SummaryWriter("./logs_train")  # 日志记录 -> Tensorboard
 
     # 数据读取
-    x_train_data = torch.from_numpy(x_train_data).float()
-    x_val_data = torch.from_numpy(x_val_data).float()
-    y_train = torch.from_numpy(y_train).float()
-    y_val = torch.from_numpy(y_val).float()
+    x_train_data = torch.from_numpy(x_train_data)
+    x_val_data = torch.from_numpy(x_val_data)
+    y_train = torch.from_numpy(y_train)
+    y_val = torch.from_numpy(y_val)
     
     # 训练开始
     for epoch in range(epochs):
@@ -145,8 +145,8 @@ def main():
     print(80 * '-')
     print()
 
-    x_test_data = torch.from_numpy(x_test_data).float().to(device)
-    y_test = torch.from_numpy(y_test).float().to(device)
+    x_test_data = torch.from_numpy(x_test_data).to(device, dtype=torch.float)
+    y_test = torch.from_numpy(y_test).to(device, dtype=torch.float)
     acc = 100. * test('./' + model_path, x_test_data, y_test, threshold)
     end = time.time()
     print("测试准确率: {:.6f}%".format(acc))

@@ -7,10 +7,11 @@ def train_one_epoch(model, x_train_data, y_train, device, optimizer, loss_fn, lo
     total_loss = 0.0
     running_loss = 0.0
     for batch_id, (x_train, y_train_ans) in enumerate(zip(x_train_data, y_train)):
-        x_train, y_train_ans = x_train.to(device), y_train_ans.to(device)
+        x_train, y_train_ans = x_train.to(device, dtype=torch.float), y_train_ans.to(device, dtype=torch.float)
         optimizer.zero_grad()
 
         pre_train = model(x_train)  # 模型预测
+        pre_train = pre_train.squeeze()
         loss = loss_fn(pre_train, y_train_ans)  # 计算 Loss 值
         loss.backward()
         optimizer.step()
@@ -37,8 +38,9 @@ def evaluate_acc(model, x_val_data, y_val, device, loss_fn, logger, epoch, thres
     running_loss = 0.0
 
     for batch_id, (x_val, y_val_ans) in enumerate(zip(x_val_data, y_val)):
-        x_val, y_val_ans = x_val.to(device), y_val_ans.to(device)
+        x_val, y_val_ans = x_val.to(device, dtype=torch.float), y_val_ans.to(device, dtype=torch.float)
         pre_val = model(x_val)
+        pre_val = pre_val.squeeze()
 
         # 计算验证数据集的 ACC 和 LOSS
         if np.abs((pre_val - y_val_ans).cpu()) <= threshold and 0 <= pre_val <= 1:
@@ -68,6 +70,7 @@ def test(model_path, x_test, y_test, threshold):
     # 测试集测试准确率
     for pok, ans in zip(x_test, y_test):
         pre = model(pok)
+        pre = pre.squeeze()
         if np.abs((pre - ans).cpu()) <= threshold and 0 <= pre <= 1:
             right += 1
     return right / len(y_test)

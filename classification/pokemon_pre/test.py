@@ -39,6 +39,6 @@ y_test = torch.from_numpy(y_test).float().cuda()
 # evaluate(x)
 # print(x)
 
-model_path = "weights_results/best_2022_02_15_02_13_23.pt"
+model_path = "weights_results/lr_1e-4_wd_1e-4_r10.pt"
 print("TEST ACC: {:.4f}%".format(100. * test(model_path, x_test_data, y_test, 0.4)))
 
