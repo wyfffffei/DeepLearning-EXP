@@ -207,6 +207,7 @@ weight_decay = 1e-3
 ```
 
 
+
 ## Multiclass Classification
 
 ### CNN(Convolutional Neural Network)
@@ -214,6 +215,8 @@ weight_decay = 1e-3
 不使用全连接处理图像的原因：
 - 全连接要求一维（Tensor）输入，所以图像重塑为一维后，图像的空间信息会丢失
 - 全连接考虑的是全局信息，实际上观察物体时并没有必要关注所有信息，而是关注物体本身
+
+
 
 #### 架构
 
@@ -237,6 +240,8 @@ weight_decay = 1e-3
 
 提取到的局部特征进行多分类输出
 
+
+
 #### 原理
 
 ##### 卷积核作用
@@ -246,11 +251,156 @@ weight_decay = 1e-3
 - 浅层提取线条边缘，深层提取具体特征（眼睛鼻子等）
 - 各个特征进行全连接训练
 
+ ![dnn.png](./img/dnn.png)
+
+##### 可视化卷积神经网络
+
+
+
 ### 多分类问题
+
+激活函数（又称归一化指数函数），通常放置在最后一层网络架构，主要是将神经网络预测的输出结果精确地用概率模型来描述。
 
 #### Softmax
 
-#### CE
+经过 Softmax 激活函数后，每个输出值都介于0和1之间，且保证所有输出值的总和为1。
+
+公式：
+
+$y_i = e^{z_i}/\Sigma_{j=0}^{C}e^{z_j}$
+
+参数：
+
+*$C$*：类别总数
+
+*$y$*：预期输出
+
+*$z$*：深度学习模型的预测值
+
+*$i$*：深度学习模型第i个输出
+
+#### CE 和 CCE
+
+损失函数，分别用于二分类和多分类的问题。
+
+CE公式：$CE \ = \ -(\Sigma_{i=1}^N\Sigma_{j=0}^Cy_{i,j} \ log \ \hat{y}_{i,j}) \ / \ N$
+
+CCE公式：$CCE \ = \ -(\Sigma_{i=1}^N\Sigma_{j=0}^Cy_{i,j} \ log( \ f(\hat{y}_{i,j})) \ ) / \ N$
+
+参数：
+
+*$C$*：类别总数
+
+*$N$*：一个批量的数据量
+
+*$y$*：预期输出
+
+*$\hat{y}$*：深度学习模型的预测输出值
+
+*$f$*：Softmax函数
 
 #### 数据增强
+
+常应用于图像领域，包括图像翻转、图像旋转、图像平移、图像缩放、颜色转换、图像模糊、加入噪声以及加入气候环境等；
+可以有效增加数据量，避免过拟合等问题。
+
+
+
+### 应用
+
+> 名称：食物分类识别
+>
+> 位置：./CNN/(main, model).py
+>
+> 数据集：<https://pan.baidu.com/s/1ygEXe_ybWiZKYTX5pyfTjA> (urj2)
+
+#### 数据获取
+
+```python
+# 读取图片，转numpy格式
+def _readfile(path, label):
+    # label 是一個 boolean variable，代表需不需要回傳 y 值
+    image_dir = sorted(os.listdir(path))
+    x = np.zeros((len(image_dir), 128, 128, 3), dtype=np.uint8)
+    y = np.zeros(len(image_dir), dtype=np.uint8) if label else None
+    for i, file in enumerate(image_dir):
+        img = cv2.imread(os.path.join(path, file))
+        x[i, :, :] = cv2.resize(img, (128, 128))
+        if label:
+            # 图像命名的短横前数字表示类别
+            y[i] = int(file.split("_")[0])
+    return x, y if label else x
+```
+
+#### 数据处理
+
+```python
+# data augmentation
+data_transform = {
+    "train": transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.RandomHorizontalFlip(),  # 隨機將圖片水平翻轉
+        transforms.RandomRotation(15),  # 隨機旋轉圖片
+        transforms.ToTensor(),  # 將圖片轉成 Tensor，並把數值 normalize 到 [0,1] (data normalization)
+    ]),
+    "val": transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.ToTensor(),
+    ]),
+    "test": transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.ToTensor(),
+    ])
+}
+train_set = ImgDataset(train_x, train_y, data_transform["train"])
+train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
+```
+
+#### 训练步骤
+
+```python
+for epoch in range(num_epoch):
+    epoch_start_time = time.time()
+    train_acc = 0.0
+    train_loss = 0.0
+
+    model_best.train()
+    for i, data in enumerate(train_val_loader):
+        optimizer.zero_grad()
+        train_pred = model_best(data[0].to(device))
+        batch_loss = loss(train_pred, data[1].to(device))
+        batch_loss.backward()
+        optimizer.step()
+
+        train_acc += np.sum(np.argmax(train_pred.cpu().data.numpy(), axis=1) == data[1].numpy())
+        train_loss += batch_loss.item()
+
+    # 將結果 print 出來
+    print('[%03d/%03d] %2.2f sec(s) Train Acc: %3.6f Loss: %3.6f'
+          % (epoch + 1, num_epoch, time.time()-epoch_start_time,
+             train_acc/train_val_set.__len__(), train_loss/train_val_set.__len__()))
+```
+
+#### 模型测试
+
+```python
+# Testing
+test_set = ImgDataset(test_x, transform=data_transform["test"])
+test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+
+model_best.eval()
+prediction = []
+with torch.no_grad():
+    for i, data in enumerate(test_loader):
+        test_pred = model_best(data.to(device))
+        test_label = np.argmax(test_pred.cpu().data.numpy(), axis=1)
+        for y in test_label:
+            prediction.append(y)
+
+# 將結果寫入 csv 檔
+with open("predict.csv", 'w') as f:
+    f.write('Id,Category\n')
+    for i, y in enumerate(prediction):
+        f.write('{},{}\n'.format(i, y))
+```
 
