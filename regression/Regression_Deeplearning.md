@@ -249,14 +249,22 @@ RMSProp + Momentum
 
 #### 权重正则化（Weights Regularization）
 
-在模型的拟合过程中，权重越小，函数往往越平滑，因此在 loss function 的基础上在加一个和所有权重相关的值，目的是使权重也尽可能的小，不互相依赖
+在模型的拟合过程中，权重越小，函数往往越平滑，因此在 loss function 的基础上在加一个和所有权重相关的值。目的是使权重也尽可能的小，不互相依赖；缓解了高方差和过拟合现象。（不对bias正则是因为b只是一个常数，不能代表所有的权重w，正则b没有意义）
 
 ![weight_regularization.png](./img/weight_regularization.png)
-$$
-L1-Regularization：Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j|}
-\quad
-L2-Regularization：Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j²|}
-$$
+
+
+
+L1-Regularization: $Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j|}$
+L2-Regularization：$Loss_{Total} = Loss_{MSE} + λ\sum_{j=0}^{M}{|w_j²|}$
+
+L2-成本函数: $J(w,b) = \frac 1 M (\sum_{j=0}^{M}{L(\hat {y^{j}}, y^j)} + λ\sum_{j=0}^{M}{|w_j²|}) $
+
+
+Weight Decay：然后$J(w,b)$的成本函数对权重$w$求偏导，得到权重的梯度$dw$，配合$w = w - \alpha * dw$进行梯度下降即可
+
+
+
 *$w$* ：模型的权重
 
 *$j$* ：代表模型的权重数量（0 -> M）
@@ -265,7 +273,7 @@ $$
 
 *$Loss_T$*：为“损失值”和“正则化权重”之和
 
-*$λ$*：可调整参数，用来控制权重正则化强度，选取方案 👇
+*$λ$*：正则化参数，用来控制权重正则化强度，选取方案 👇
 
  ![weight_regularization_2.png](./img/weight_regularization_2.png)
 
